@@ -10,10 +10,15 @@ class Player(pygame.sprite.Sprite):
         self.groups = self.game.todos_sprites
         pygame.sprite.Sprite.__init__(self,self.groups)
 
-        self.x = x * 64
-        self.y = y * 64
         self.largura = 200
         self.altura = 200
+        self.x = 400
+        self.y = 500
+
+        self.movimentacao_x = 0
+
+        # utilizado para saber em que direção o personagem está indo para as animações WIP
+        self.direcao = 'frente'
 
         self.image_raw = pygame.image.load("recursos/texturas/sprites/sprite_lobo_idle.png")
 
@@ -25,5 +30,23 @@ class Player(pygame.sprite.Sprite):
         self.rect.y = self.y
 
     def update(self):
-        pass
+        self.movimento()
 
+        self.rect.x += self.movimentacao_x
+        self.movimentacao_x = 0
+
+
+    def movimento(self):
+        teclas = pygame.key.get_pressed()
+        if teclas[pygame.K_LEFT]:
+           self.movimentacao_x -= VELOCIDADE_PLAYER
+           self.direcao = 'esquerda'
+        elif teclas [pygame.K_RIGHT]:
+            self.movimentacao_x += VELOCIDADE_PLAYER
+            self.direcao = 'direita'
+        elif teclas[pygame.K_a]:
+           self.movimentacao_x -= VELOCIDADE_PLAYER
+           self.direcao = 'esquerda'
+        elif teclas [pygame.K_d]:
+            self.movimentacao_x += VELOCIDADE_PLAYER
+            self.direcao = 'direita'
