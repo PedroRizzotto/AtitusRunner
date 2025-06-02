@@ -3,12 +3,13 @@ import pygame
 from recursos.config import *
 from recursos.sprites import *
 from recursos.funcoes import *
+from recursos.map_manager import MapManager
+
 import sys
 
 class Game:
     def __init__(self):
         pygame.init()
-
         self.tela = pygame.display.set_mode((1000,700))
         self.clock = pygame.time.Clock()
         #self.font = pygame.font.Font('Arial',32)
@@ -18,10 +19,14 @@ class Game:
         self.jogando = True
         
         self.todos_sprites = pygame.sprite.LayeredUpdates()
-        self.blocos = pygame.sprite.LayeredUpdates()
+        self.obstaculos = pygame.sprite.LayeredUpdates()
         self.inimigos = pygame.sprite.LayeredUpdates()
 
+        self.map_manager = MapManager(self)
         self.player = Player(self, 1, 2)
+
+
+        self.map_manager.adicionar_nova_linha()
 
     def eventos(self):
         for evento in pygame.event.get():
@@ -31,7 +36,9 @@ class Game:
     def update(self):
         #Método update que vem do Layered Updates que defini antes,
         #ele vai percorrer todos sprites que estão no grupo e vai procurar o método update deles.
+        self.map_manager.atualizar()
         self.todos_sprites.update()
+
 
     def draw(self):
         self.tela.fill(BLACK)
