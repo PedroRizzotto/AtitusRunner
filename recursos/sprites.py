@@ -60,7 +60,7 @@ class Player(pygame.sprite.Sprite):
             ).copy()
             self.frames.append(frame_visible)
 
-        self.velocidade_animacao = 0.20
+        self.velocidade_animacao = VELOCIDADE_ANIMACAO_PLAYER
         self.contador_animacao = 0
         self.direcao_animacao = 1
 
@@ -216,3 +216,20 @@ class Parede(pygame.sprite.Sprite):
         self.rect.y += VELOCIDADE_SCROLL  # rolagem para baixo
         if self.rect.top > self.game.tela.get_height():
             self.kill()
+
+class Monitor(pygame.sprite.Sprite):
+    def __init__(self, game, x,y):
+        self.game = game
+        self._layer = META_LAYER
+        self.groups = self.game.todos_sprites, self.game.meta
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        self.largura = 150
+        self.altura = 150
+        self.x = x
+        self.y = y
+
+        self.image_raw = pygame.image.load("recursos/texturas/sprites/monitor.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image_raw,(self.largura,self.altura))
+
+        self.rect = self.image.get_rect()
