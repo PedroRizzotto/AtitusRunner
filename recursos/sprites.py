@@ -218,14 +218,14 @@ class Parede(pygame.sprite.Sprite):
             self.kill()
 
 class Monitor(pygame.sprite.Sprite):
-    def __init__(self, game, x,y):
+    def __init__(self, game, x, y):
         self.game = game
         self._layer = META_LAYER
         self.groups = self.game.todos_sprites, self.game.meta
         pygame.sprite.Sprite.__init__(self, self.groups)
 
-        self.largura = 150
-        self.altura = 150
+        self.largura = 200
+        self.altura = 200
         self.x = x
         self.y = y
 
@@ -233,3 +233,31 @@ class Monitor(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image_raw,(self.largura,self.altura))
 
         self.rect = self.image.get_rect()
+        self.rect.x = self.x
+        self.rect.y = self.y
+
+        self.contador_animacao = 0
+        self.direcao_animacao = 'aumentando'
+
+    def animar(self):
+        if self.direcao_animacao == 'aumentando':
+            if self.contador_animacao < 100:
+                self.contador_animacao += 1
+            else:
+                self.direcao_animacao = 'diminuindo'
+        else:
+            if self.contador_animacao > 0:
+                self.contador_animacao -= 1
+            else:
+                self.direcao_animacao = 'aumentando'
+
+        escala = 1 + self.contador_animacao * 0.00115 
+        nova_largura = int(self.largura * escala)
+        nova_altura = int(self.altura * escala)
+        self.image = pygame.transform.scale(self.image_raw, (nova_largura, nova_altura))
+
+        # Atualiza o retângulo para corresponder ao novo tamanho
+        self.rect = self.image.get_rect(center=self.rect.center)
+
+    def update(self):
+        self.animar()

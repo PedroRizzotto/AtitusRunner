@@ -12,7 +12,7 @@ class Game:
         pygame.init()
         self.tela = pygame.display.set_mode((1000,700))
         self.clock = pygame.time.Clock()
-        #self.font = pygame.font.Font('Arial',32)
+        self.font = pygame.font.Font('recursos/PressStart2P.ttf',32)
         self.rodando = True
 
     def novo(self):
@@ -26,7 +26,7 @@ class Game:
 
         self.map_manager = MapManager(self)
         self.player = Player(self, 450, 500)
-        self.monitor = Monitor(self, 10, 0)
+        self.monitor = Monitor(self, 20, 1)
 
 
         self.map_manager.adicionar_nova_linha()
@@ -38,16 +38,8 @@ class Game:
                 self.rodando = False
             if evento.type == pygame.KEYUP and evento.key == pygame.K_ESCAPE:
                 if self.pausado == True: self.pausado = False
-                else:
-                    self.pausado = True 
-                    print_jogo = pygame.image.tobytes(self.tela,'RGBA')
-                    str_jogo_pausado = pygame.image.frombytes(print_jogo,(1000,700),'RGBA')
-                    self.img_jogo_pausado = pygame.transform.box_blur(str_jogo_pausado,INTENSIDADE_BLUR)
-                    self.tela.blit(self.img_jogo_pausado,(0,0))
-                    pygame.display.update()
-                    self.img_jogo_pausado = pygame.transform.gaussian_blur(str_jogo_pausado,INTENSIDADE_BLUR)
-                    self.tela.blit(self.img_jogo_pausado,(0,0))
-                    pygame.display.update()
+                else: self.menu_pausa()
+
     def update(self):
         #Método update que vem do Layered Updates que defini antes,
         #ele vai percorrer todos sprites que estão no grupo e vai procurar o método update deles.
@@ -77,6 +69,17 @@ class Game:
 
     def tela_inicial(self):
         pass
+
+    def menu_pausa(self):
+        self.pausado = True
+        print_jogo = pygame.image.tobytes(self.tela,'RGBA')
+        str_jogo_pausado = pygame.image.frombytes(print_jogo,(1000,700),'RGBA')
+        self.img_jogo_pausado = pygame.transform.box_blur(str_jogo_pausado,INTENSIDADE_BLUR) # BLUR MAIS RÁPIDO PARA PAUSAR NA HORA
+        self.tela.blit(self.img_jogo_pausado,(0,0))
+        pygame.display.update()
+        self.img_jogo_pausado = pygame.transform.gaussian_blur(str_jogo_pausado,INTENSIDADE_BLUR) # BLUR MAIS LENTO MAS MAIS BONITO
+        self.tela.blit(self.img_jogo_pausado,(0,0))
+        pygame.display.update()
 
 g = Game()
 g.tela_inicial()
