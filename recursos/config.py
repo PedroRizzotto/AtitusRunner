@@ -1,5 +1,6 @@
 #config.py
 VELOCIDADE_PLAYER = 4
+VELOCIDADE_SCROLL = 5
 
 PLAYER_LAYER = 4
 PAREDE_LAYER = 3
@@ -10,3 +11,8 @@ FPS = 60
 
 RED = (255,0,0)
 BLACK = (0,0,0)
+
+
+# Tipos de parede e Probabilidades
+TIPOS_PAREDE = [0,1,2,3]
+PROBABILIDADE_PAREDE = [0.75,0.15,0.05,0.05]

@@ -2,7 +2,8 @@
 
 import random
 import pygame
-from recursos.sprites import Obstacle, Ground
+from recursos.sprites import Obstacle, Ground, Parede
+from recursos.config import *
 
 class MapManager:
     def __init__(self, game):
@@ -15,6 +16,8 @@ class MapManager:
         #criar as primeiras linhas vazias:
         y_pos = 0
         for linha in range(0,4):
+            parede_esquerda = Parede(self.game, 0, y_pos,0,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
+            parede_direita = Parede(self.game, 900, y_pos,1,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
             for coluna in range(0,self.largura_linha):
                 x = 100 + (coluna * self.tamanho_tile)
                 tile = Ground(self.game, x, y_pos)
@@ -47,6 +50,9 @@ class MapManager:
             nova_linha.append(tile)
 
         self.linhas_ativas.append(nova_linha)
+
+        parede_esquerda = Parede(self.game, 0, y_pos,0,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
+        parede_direita = Parede(self.game, 900, y_pos,1,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
 
 
     def atualizar(self):

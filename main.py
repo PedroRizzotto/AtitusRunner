@@ -20,10 +20,10 @@ class Game:
         
         self.todos_sprites = pygame.sprite.LayeredUpdates()
         self.obstaculos = pygame.sprite.LayeredUpdates()
-        self.inimigos = pygame.sprite.LayeredUpdates()
+        self.paredes = pygame.sprite.LayeredUpdates()
 
         self.map_manager = MapManager(self)
-        self.player = Player(self, 1, 2)
+        self.player = Player(self, 450, 500)
 
 
         self.map_manager.adicionar_nova_linha()
