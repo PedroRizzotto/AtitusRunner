@@ -10,9 +10,11 @@ import sys
 class Game:
     def __init__(self):
         pygame.init()
-        self.tela = pygame.display.set_mode((1000,700))
+        self.tela = pygame.display.set_mode((LARGURA_TELA,ALTURA_TELA))
         self.clock = pygame.time.Clock()
-        self.font = pygame.font.Font('recursos/PressStart2P.ttf',32)
+        self.fonte_placar = pygame.font.Font('recursos/PressStart2P.ttf',12)
+        self.fonte_menu = pygame.font.Font('recursos/PressStart2P.ttf',50)
+        self.fonte_menu_menor = pygame.font.Font('recursos/PressStart2P.ttf',20)
         self.rodando = True
 
     def novo(self):
@@ -26,7 +28,7 @@ class Game:
 
         self.map_manager = MapManager(self)
         self.player = Player(self, 450, 500)
-        self.monitor = Monitor(self, 20, 1)
+        self.monitor = Placar(self, 20, 1)
 
 
         self.map_manager.adicionar_nova_linha()
@@ -76,10 +78,27 @@ class Game:
         str_jogo_pausado = pygame.image.frombytes(print_jogo,(1000,700),'RGBA')
         self.img_jogo_pausado = pygame.transform.box_blur(str_jogo_pausado,INTENSIDADE_BLUR) # BLUR MAIS RÁPIDO PARA PAUSAR NA HORA
         self.tela.blit(self.img_jogo_pausado,(0,0))
+
+        # texto grande pausado
+        texto_pausado = self.fonte_menu.render("Jogo Pausado!",True,WHITE)
+        texto_pausado_width, texto_pausado_height = self.fonte_menu.size("Jogo Pausado!")
+        
+        # texto menor em baixo dizendo como voltar
+        texto_como_voltar = self.fonte_menu_menor.render("Pressione <Esc> para voltar ao jogo",True,WHITE)
+        texto_como_voltar_width, texto_como_voltar_height = self.fonte_menu_menor.size("Pressione <Esc> para voltar ao jogo")
+    
+        self.tela.blit(texto_pausado,((LARGURA_TELA / 2 - texto_pausado_width / 2),(ALTURA_TELA / 2 - texto_pausado_height)))
+        self.tela.blit(texto_como_voltar,((LARGURA_TELA / 2 - texto_como_voltar_width / 2),(ALTURA_TELA / 2 - texto_como_voltar_height + texto_pausado_height )))
         pygame.display.update()
         self.img_jogo_pausado = pygame.transform.gaussian_blur(str_jogo_pausado,INTENSIDADE_BLUR) # BLUR MAIS LENTO MAS MAIS BONITO
         self.tela.blit(self.img_jogo_pausado,(0,0))
+        
+        # texto
+        self.tela.blit(texto_pausado,((LARGURA_TELA / 2 - texto_pausado_width / 2),(ALTURA_TELA / 2 - texto_pausado_height)))
+        self.tela.blit(texto_como_voltar,((LARGURA_TELA / 2 - texto_como_voltar_width / 2),(ALTURA_TELA / 2 - texto_como_voltar_height + texto_pausado_height )))
+
         pygame.display.update()
+    
 
 g = Game()
 g.tela_inicial()

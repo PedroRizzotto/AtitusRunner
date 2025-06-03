@@ -217,7 +217,7 @@ class Parede(pygame.sprite.Sprite):
         if self.rect.top > self.game.tela.get_height():
             self.kill()
 
-class Monitor(pygame.sprite.Sprite):
+class Placar(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
         self.game = game
         self._layer = META_LAYER
