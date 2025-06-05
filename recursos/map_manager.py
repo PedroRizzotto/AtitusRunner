@@ -49,10 +49,12 @@ class MapManager:
                 tile = Ground(self.game, x, y_pos)
             nova_linha.append(tile)
 
-        self.linhas_ativas.append(nova_linha)
-
         parede_esquerda = Parede(self.game, 0, y_pos,0,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
         parede_direita = Parede(self.game, 900, y_pos,1,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
+        nova_linha.append(parede_esquerda)
+        nova_linha.append(parede_direita)
+
+        self.linhas_ativas.append(nova_linha)
 
 
     def atualizar(self):

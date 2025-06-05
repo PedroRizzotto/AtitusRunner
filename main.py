@@ -10,8 +10,11 @@ import sys
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.display.set_caption('Atitus Survivor')
         self.tela = pygame.display.set_mode((LARGURA_TELA,ALTURA_TELA))
         self.clock = pygame.time.Clock()
+        icone = pygame.image.load('recursos/icon.png')
+        pygame.display.set_icon(icone)
         self.fonte_texto_vidas = pygame.font.Font('recursos/PressStart2P.ttf',15)
         self.fonte_como_pausar = pygame.font.Font('recursos/PressStart2P.ttf',8)
         self.fonte_menu = pygame.font.Font('recursos/PressStart2P.ttf',50)
@@ -19,13 +22,16 @@ class Game:
         self.rodando = True
 
     def novo(self):
+        self.pontuacao_atual = 0
         self.jogando = True
         self.pausado = False
         
         self.todos_sprites = pygame.sprite.LayeredUpdates()
         self.obstaculos = pygame.sprite.LayeredUpdates()
         self.paredes = pygame.sprite.LayeredUpdates()
+        self.efeitos = pygame.sprite.LayeredUpdates()
         self.meta = pygame.sprite.LayeredUpdates()
+        
 
         self.map_manager = MapManager(self)
         self.player = Player(self, 450, 500)
@@ -47,7 +53,7 @@ class Game:
         #ele vai percorrer todos sprites que estão no grupo e vai procurar o método update deles.
         self.map_manager.atualizar()
         self.todos_sprites.update()
-
+        self.pontuacao_atual += 1
 
     def draw(self):
         self.tela.fill(BLACK)

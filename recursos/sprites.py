@@ -17,6 +17,7 @@ class Player(pygame.sprite.Sprite):
         self.movimentacao_x = 0
         self.direcao = 'frente'
         self.movendo = False
+        self.tempo_imunidade = 0
 
         self.spritesheet = pygame.image.load("recursos/texturas/sprites/lobo_spritesheet.png").convert_alpha()
         self.image_raw = pygame.image.load("recursos/texturas/sprites/sprite_lobo_idle.png").convert_alpha()
@@ -36,6 +37,11 @@ class Player(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = self.x
         self.rect.y = self.y
+
+        self.offset_hitbox_top = 0.75  # 75% da altura para baixo
+        self.hitbox_altura = int(self.rect.height * 0.25)  # 25% da altura
+        self.atualizar_hitbox()
+
 
         # Animação
         self.frame_width = 64
@@ -94,8 +100,19 @@ class Player(pygame.sprite.Sprite):
             'width': right - left + 1,
             'height': bottom - top + 1
         }
+    
+    def atualizar_hitbox(self):
+        altura = self.hitbox_altura
+        topo = self.rect.y + int(self.rect.height * self.offset_hitbox_top)
+        self.hitbox = pygame.Rect(self.rect.x, topo, self.rect.width, altura)
+
 
     def update(self):
+        if self.tempo_imunidade > 0:
+            self.tempo_imunidade -= 1
+        
+        print(self.tempo_imunidade)
+
         self.movimento()
         self.animar()
 
@@ -104,6 +121,8 @@ class Player(pygame.sprite.Sprite):
 
         self.movimentacao_x = 0
         self.movendo = False
+
+        self.atualizar_hitbox()
 
     def movimento(self):
         teclas = pygame.key.get_pressed()
@@ -137,7 +156,7 @@ class Player(pygame.sprite.Sprite):
     def colisao(self):
         hits = []
         for parede in self.game.paredes:
-            if self.rect.colliderect(parede.rect):
+            if self.hitbox.colliderect(parede.rect):
                 hits.append(parede)
 
         for parede in hits:
@@ -148,19 +167,32 @@ class Player(pygame.sprite.Sprite):
 
         hits = []
         for obstaculo in self.game.obstaculos:
-            if self.rect.colliderect(obstaculo.rect):
-                obstaculo_x = obstaculo.rect[0]
-                obstaculo_y = obstaculo.rect[1]
-                obstaculo.kill()
-                tile = Ground(self.game,obstaculo_x,obstaculo_y)
+            if self.hitbox.colliderect(obstaculo.rect):
+                
                 print('colisao')
-                if self.game.monitor.vidas > 1:
-                    self.game.monitor.vidas -= 1
-                else:
-                    self.game.game_over()
+                if self.tempo_imunidade == 0:
+                    if self.game.monitor.vidas > 1:
+                        self.game.monitor.vidas -= 1
+                        self.tempo_imunidade = 30
+                    else:
+                        self.game.game_over()
+
+                obstaculo_colidido_x = obstaculo.rect[0]
+                obstaculo_colidido_y = obstaculo.rect[1]
+                obstaculo.kill()
+                tile = Ground(self.game,obstaculo_colidido_x,obstaculo_colidido_y)
+                efeito_explosao = ExplosaoFumaca(self.game,obstaculo_colidido_x,obstaculo_colidido_y)
+                for obstaculo in self.game.obstaculos:
+                    obstaculo_x = obstaculo.rect[0]
+                    obstaculo_y = obstaculo.rect[1]
+                    if abs(obstaculo_y - obstaculo_colidido_x) < 201 and (obstaculo_y - obstaculo_colidido_y) < 201:
+                        obstaculo.kill()
+                        tile = Ground(self.game,obstaculo_x,obstaculo_y)
+                        efeito_explosao = ExplosaoFumaca(self.game,obstaculo_x,obstaculo_y)
 
     def debug_draw_hitbox(self, tela):
-        pygame.draw.rect(tela, (0, 255, 0), self.rect, 2)
+        pygame.draw.rect(tela, (0, 255, 0), self.rect, 1)  # sprite inteiro
+        pygame.draw.rect(tela, (255, 0, 0), self.hitbox, 2)  # hitbox real
 
 
 class Obstacle(pygame.sprite.Sprite):
@@ -175,7 +207,7 @@ class Obstacle(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=(x, y))
 
         # Hitbox customizada
-        margem = 0.2 #porcentagem pra reduzir a hitbox
+        margem = 0.5 #porcentagem pra reduzir a hitbox
         self.hitbox = pygame.Rect(
             self.rect.left + self.rect.width / margem / 2,
             self.rect.top + self.rect.height * margem /2,
@@ -350,7 +382,58 @@ class Placar(pygame.sprite.Sprite):
         #atualiza a posicao do placar
         self.rect = self.image.get_rect(center=(self.x + self.largura // 2, self.y + self.altura // 2))
 
-    
+class ExplosaoFumaca(pygame.sprite.Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self._layer = PLAYER_LAYER
+        self.groups = self.game.todos_sprites, self.game.efeitos
+        pygame.sprite.Sprite.__init__(self, self.groups)
 
+        self.largura = 256
+        self.altura = 384
+        self.x = x + 100
+        self.y = y + 100
 
-            
+        self.spritesheet = pygame.image.load("recursos/texturas/sprites/explosao_fumaca_spritesheet_transparente.png").convert_alpha()
+
+        # Parâmetros da spritesheet
+        self.total_frames = 7
+        self.frame_width = 256
+        self.frame_height = 384
+
+        # Extrair quadros da spritesheet
+        self.frames = []
+        for i in range(self.total_frames):
+            frame = pygame.Surface((self.frame_width, self.frame_height), pygame.SRCALPHA)
+            frame.blit(self.spritesheet, (0, 0), (i * self.frame_width, 0, self.frame_width, self.frame_height))
+            frame_scaled = pygame.transform.scale(frame, (self.largura, self.altura))
+            self.frames.append(frame_scaled)
+
+        self.current_frame = 0
+        self.image = self.frames[self.current_frame]
+        self.rect = self.image.get_rect()
+        self.rect.center = (self.x, self.y)
+
+        # Controle de animação
+        self.velocidade_animacao = 0.30  # menor = mais lento
+        self.contador_animacao = 0
+
+    def animar(self):
+        self.contador_animacao += self.velocidade_animacao
+        if self.contador_animacao >= 1:
+            self.current_frame += 1
+            self.contador_animacao = 0
+
+            if self.current_frame >= self.total_frames:
+                self.kill()
+            else:
+                self.image = self.frames[self.current_frame]
+                old_center = self.rect.center
+                self.rect = self.image.get_rect()
+                self.rect.center = old_center
+
+    def update(self):
+        self.animar()
+        self.rect.y += VELOCIDADE_SCROLL
+        if self.rect.top > self.game.tela.get_height():
+            self.kill()
