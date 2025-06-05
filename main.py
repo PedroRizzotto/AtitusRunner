@@ -12,7 +12,8 @@ class Game:
         pygame.init()
         self.tela = pygame.display.set_mode((LARGURA_TELA,ALTURA_TELA))
         self.clock = pygame.time.Clock()
-        self.fonte_placar = pygame.font.Font('recursos/PressStart2P.ttf',12)
+        self.fonte_texto_vidas = pygame.font.Font('recursos/PressStart2P.ttf',15)
+        self.fonte_como_pausar = pygame.font.Font('recursos/PressStart2P.ttf',8)
         self.fonte_menu = pygame.font.Font('recursos/PressStart2P.ttf',50)
         self.fonte_menu_menor = pygame.font.Font('recursos/PressStart2P.ttf',20)
         self.rodando = True
@@ -29,7 +30,6 @@ class Game:
         self.map_manager = MapManager(self)
         self.player = Player(self, 450, 500)
         self.monitor = Placar(self, 20, 1)
-
 
         self.map_manager.adicionar_nova_linha()
 
@@ -52,6 +52,7 @@ class Game:
     def draw(self):
         self.tela.fill(BLACK)
         self.todos_sprites.draw(self.tela)
+        self.player.debug_draw_hitbox(self.tela)
         self.clock.tick(FPS)
         
         pygame.display.update()
@@ -64,10 +65,12 @@ class Game:
                 self.update()
                 self.draw()
             else: pass
+
         self.rodando = False
 
     def game_over(self):
-        pass
+        self.jogando = False
+        print('game over')
 
     def tela_inicial(self):
         pass
@@ -83,7 +86,7 @@ class Game:
         texto_pausado = self.fonte_menu.render("Jogo Pausado!",True,WHITE)
         texto_pausado_width, texto_pausado_height = self.fonte_menu.size("Jogo Pausado!")
         
-        # texto menor em baixo dizendo como voltar
+        # texto menor em baixo dizendo como voltar ao jogo
         texto_como_voltar = self.fonte_menu_menor.render("Pressione <Esc> para voltar ao jogo",True,WHITE)
         texto_como_voltar_width, texto_como_voltar_height = self.fonte_menu_menor.size("Pressione <Esc> para voltar ao jogo")
     

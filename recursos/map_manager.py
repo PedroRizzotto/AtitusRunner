@@ -24,7 +24,7 @@ class MapManager:
             y_pos += 200
 
     def gerar_linha_aleatoria(self):
-        dificuldade = 0.3
+        dificuldade = 0.2
         linha = ""
         for _ in range(self.largura_linha):
             linha += "1" if random.random() < dificuldade else "0"

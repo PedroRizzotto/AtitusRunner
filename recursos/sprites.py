@@ -146,6 +146,19 @@ class Player(pygame.sprite.Sprite):
             elif self.movimentacao_x < 0:
                 self.rect.left = parede.rect.right
 
+        hits = []
+        for obstaculo in self.game.obstaculos:
+            if self.rect.colliderect(obstaculo.rect):
+                obstaculo_x = obstaculo.rect[0]
+                obstaculo_y = obstaculo.rect[1]
+                obstaculo.kill()
+                tile = Ground(self.game,obstaculo_x,obstaculo_y)
+                print('colisao')
+                if self.game.monitor.vidas > 1:
+                    self.game.monitor.vidas -= 1
+                else:
+                    self.game.game_over()
+
     def debug_draw_hitbox(self, tela):
         pygame.draw.rect(tela, (0, 255, 0), self.rect, 2)
 
@@ -161,8 +174,21 @@ class Obstacle(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.image_raw, (game.tela.get_width() // 5, game.tela.get_width() // 5))
         self.rect = self.image.get_rect(topleft=(x, y))
 
+        # Hitbox customizada
+        margem = 0.2 #porcentagem pra reduzir a hitbox
+        self.hitbox = pygame.Rect(
+            self.rect.left + self.rect.width / margem / 2,
+            self.rect.top + self.rect.height * margem /2,
+            self.rect.width * (1 - margem),
+            self.rect.height * (1- margem)
+        )
+
+    def debug_draw_hitbox(self, tela):
+        pygame.draw.rect(tela, (255,0,0),self.hitbox, 2)
+
     def update(self):
         self.rect.y += VELOCIDADE_SCROLL  # rolagem para baixo
+        self.hitbox.y += VELOCIDADE_SCROLL # mover a hitbox tbm
         if self.rect.top > self.game.tela.get_height():
             self.kill()
 
@@ -229,8 +255,9 @@ class Placar(pygame.sprite.Sprite):
         self.x = x
         self.y = y
 
-        self.image_raw = pygame.image.load("recursos/texturas/sprites/monitor.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image_raw,(self.largura,self.altura))
+        self.image_monitor = pygame.image.load("recursos/texturas/sprites/monitor.png").convert_alpha()
+        self.image_raw = pygame.transform.scale(self.image_monitor, (self.largura, self.altura))
+        self.image = self.image_raw.copy()
 
         self.rect = self.image.get_rect()
         self.rect.x = self.x
@@ -238,6 +265,32 @@ class Placar(pygame.sprite.Sprite):
 
         self.contador_animacao = 0
         self.direcao_animacao = 'aumentando'
+
+        # Corações
+        self.vidas = 3  # Vidas do personagem
+
+        self.tamanho_coracao = (35,35)
+
+        self.coracoes_animados = []
+        spritesheet = pygame.image.load("recursos/texturas/sprites/coracao_animado_spritesheet.png").convert_alpha()
+        for i in range(8):
+            frame = spritesheet.subsurface((i * 16, 0, 16, 16))
+            frame = pygame.transform.scale(frame, (self.tamanho_coracao))
+            self.coracoes_animados.append(frame)
+
+        self.coracao_morto_raw = pygame.image.load("recursos/texturas/sprites/coracao_morto.png").convert_alpha()
+        self.coracao_morto = pygame.transform.scale(self.coracao_morto_raw, (self.tamanho_coracao))
+
+        self.frame_atual = 0
+        self.timer_animacao = 0
+        self.intervalo_animacao = 100  # ms entre quadros
+
+        self.texto_vidas = self.game.fonte_texto_vidas.render('Vidas',True,WHITE)
+        self.texto_vidas_width, self.texto_vidas_height = self.game.fonte_texto_vidas.size('Vidas')
+
+        self.texto_pausar = self.game.fonte_como_pausar.render('Press <Esc> to pause',True,WHITE)
+        self.texto_pausar_width, self.texto_pausar_height = self.game.fonte_como_pausar.size('Press <Esc> to pause')
+
 
     def animar(self):
         if self.direcao_animacao == 'aumentando':
@@ -251,13 +304,53 @@ class Placar(pygame.sprite.Sprite):
             else:
                 self.direcao_animacao = 'aumentando'
 
-        escala = 1 + self.contador_animacao * 0.00115 
-        nova_largura = int(self.largura * escala)
-        nova_altura = int(self.altura * escala)
-        self.image = pygame.transform.scale(self.image_raw, (nova_largura, nova_altura))
+        self.escala = 1 + self.contador_animacao * 0.00115
 
-        # Atualiza o retângulo para corresponder ao novo tamanho
-        self.rect = self.image.get_rect(center=self.rect.center)
+    def atualizar_animacao_coracoes(self):
+        agora = pygame.time.get_ticks()
+        if agora - self.timer_animacao > self.intervalo_animacao:
+            self.frame_atual = (self.frame_atual + 1) % len(self.coracoes_animados)
+            self.timer_animacao = agora
+
+    def desenhar_placar(self):
+        # superfície base limpa com o tamanho do monitor
+        self.superficie = pygame.Surface((self.largura, self.altura), pygame.SRCALPHA)
+        self.superficie.blit(self.image_raw, (0, 0))  # Fundo do placar
+
+        centro_x = self.largura // 2
+        centro_y = self.altura // 2
+
+        total_largura = 3 * self.tamanho_coracao[0] + 2 * 10
+        inicio_x = centro_x - total_largura // 2
+
+        for i in range(3):
+            x = inicio_x + i * (self.tamanho_coracao[0] + 10)
+            y = centro_y - 20 - self.tamanho_coracao[1] // 2
+            if i < self.vidas:
+                frame = self.coracoes_animados[self.frame_atual]
+                self.superficie.blit(frame, (x, y))
+            else:
+                self.superficie.blit(self.coracao_morto, (x, y))
+
+        self.superficie.blit(self.texto_vidas, (centro_x - self.texto_vidas_width // 2, centro_y - 60))
+        self.superficie.blit(self.texto_pausar, (centro_x - self.texto_pausar_width // 2, centro_y + 10))
+
+        # redimensiona toda a superfície final a partir da escala atual
+        nova_largura = int(self.largura * self.escala)
+        nova_altura = int(self.altura * self.escala)
+        
+        #pega a superfície e coloca como self.image pro pygame entender que é a img
+        self.image = pygame.transform.smoothscale(self.superficie, (nova_largura, nova_altura)) 
 
     def update(self):
         self.animar()
+        self.atualizar_animacao_coracoes()
+        self.desenhar_placar()
+
+        #atualiza a posicao do placar
+        self.rect = self.image.get_rect(center=(self.x + self.largura // 2, self.y + self.altura // 2))
+
+    
+
+
+            
