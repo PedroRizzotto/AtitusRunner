@@ -169,7 +169,6 @@ class Player(pygame.sprite.Sprite):
         for obstaculo in self.game.obstaculos:
             if self.hitbox.colliderect(obstaculo.rect):
                 
-                print('colisao')
                 if self.tempo_imunidade == 0:
                     if self.game.monitor.vidas > 1:
                         self.game.monitor.vidas -= 1
@@ -193,7 +192,6 @@ class Player(pygame.sprite.Sprite):
     def debug_draw_hitbox(self, tela):
         pygame.draw.rect(tela, (0, 255, 0), self.rect, 1)  # sprite inteiro
         pygame.draw.rect(tela, (255, 0, 0), self.hitbox, 2)  # hitbox real
-
 
 class Obstacle(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -275,7 +273,7 @@ class Parede(pygame.sprite.Sprite):
         if self.rect.top > self.game.tela.get_height():
             self.kill()
 
-class Placar(pygame.sprite.Sprite):
+class Monitor(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
         self.game = game
         self._layer = META_LAYER
@@ -344,10 +342,10 @@ class Placar(pygame.sprite.Sprite):
             self.frame_atual = (self.frame_atual + 1) % len(self.coracoes_animados)
             self.timer_animacao = agora
 
-    def desenhar_placar(self):
+    def desenhar_Monitor(self):
         # superfície base limpa com o tamanho do monitor
         self.superficie = pygame.Surface((self.largura, self.altura), pygame.SRCALPHA)
-        self.superficie.blit(self.image_raw, (0, 0))  # Fundo do placar
+        self.superficie.blit(self.image_raw, (0, 0))  # Fundo do Monitor
 
         centro_x = self.largura // 2
         centro_y = self.altura // 2
@@ -377,9 +375,9 @@ class Placar(pygame.sprite.Sprite):
     def update(self):
         self.animar()
         self.atualizar_animacao_coracoes()
-        self.desenhar_placar()
+        self.desenhar_Monitor()
 
-        #atualiza a posicao do placar
+        #atualiza a posicao do Monitor
         self.rect = self.image.get_rect(center=(self.x + self.largura // 2, self.y + self.altura // 2))
 
 class ExplosaoFumaca(pygame.sprite.Sprite):
@@ -396,12 +394,12 @@ class ExplosaoFumaca(pygame.sprite.Sprite):
 
         self.spritesheet = pygame.image.load("recursos/texturas/sprites/explosao_fumaca_spritesheet_transparente.png").convert_alpha()
 
-        # Parâmetros da spritesheet
+        # tamanho de cada sprite e o número de spritess
         self.total_frames = 7
         self.frame_width = 256
         self.frame_height = 384
 
-        # Extrair quadros da spritesheet
+        # loop pra extrair todos os quadros da spritesheet
         self.frames = []
         for i in range(self.total_frames):
             frame = pygame.Surface((self.frame_width, self.frame_height), pygame.SRCALPHA)
@@ -415,7 +413,7 @@ class ExplosaoFumaca(pygame.sprite.Sprite):
         self.rect.center = (self.x, self.y)
 
         # Controle de animação
-        self.velocidade_animacao = 0.30  # menor = mais lento
+        self.velocidade_animacao = VELOCIDADE_ANIMACAO_EXPLOSAO_FUMACA
         self.contador_animacao = 0
 
     def animar(self):

@@ -31,11 +31,11 @@ class Game:
         self.paredes = pygame.sprite.LayeredUpdates()
         self.efeitos = pygame.sprite.LayeredUpdates()
         self.meta = pygame.sprite.LayeredUpdates()
-        
 
         self.map_manager = MapManager(self)
         self.player = Player(self, 450, 500)
-        self.monitor = Placar(self, 20, 1)
+        self.monitor = Monitor(self, 20, 1)
+
 
         self.map_manager.adicionar_nova_linha()
 
