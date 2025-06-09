@@ -10,7 +10,7 @@ def inicializar_banco_dados():
     except:
         banco = open("recursos/log.dat",'w')
 
-def escrever_dados(nome,nanos,conhecimento,networking):
+def escrever_dados(nome,nanos,pontuacao,conhecimento,networking):
     banco = open("recursos/log.dat","r")
     dados = banco.read()
     banco.close()
@@ -21,7 +21,18 @@ def escrever_dados(nome,nanos,conhecimento,networking):
 
     data_br = datetime.now().strftime("%d/%m/%Y")
     hora = datetime.now().strftime("%H:%M:%S")
-    dadosDict[nome] = (nanos, conhecimento, networking, data_br, hora)
+
+    chave_jogada = f"{nome} {data_br} {hora}"
+
+    dadosDict[chave_jogada] = {
+        "nome":nome,
+        "nanos":nanos,
+        "pontuacao":pontuacao,
+        "conhecimento": conhecimento,
+        "networking": networking,
+        "data": data_br,
+        "hora": hora
+    }
 
     banco = open("recursos/log.dat","w")
     banco.write(json.dumps(dadosDict))

@@ -27,6 +27,7 @@ class Game:
         self.distancia_percorrida = 0
         self.pontuacao = 0
         self.conhecimento = 0
+        self.conhecimento_scoreboard = 0
         self.networking = 0
         self.nanos_coletados = 0
 
@@ -35,6 +36,7 @@ class Game:
         
         self.todos_sprites = pygame.sprite.LayeredUpdates()
         self.obstaculos = pygame.sprite.LayeredUpdates()
+        self.itens = pygame.sprite.LayeredUpdates()
         self.paredes = pygame.sprite.LayeredUpdates()
         self.efeitos = pygame.sprite.LayeredUpdates()
         self.meta = pygame.sprite.LayeredUpdates()

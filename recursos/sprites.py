@@ -190,19 +190,38 @@ class Player(pygame.sprite.Sprite):
                         self.game.vidas -= 1
                         self.tempo_imunidade = 30
                     else:
-                        escrever_dados(self.game.nome,self.game.nanos_coletados,self.game.pontuacao,self.game.networking)
+                        escrever_dados(self.game.nome, self.game.nanos_coletados, 
+                                    self.game.pontuacao, self.game.conhecimento, self.game.networking)
                         self.game.jogando = False
 
                 obstaculo_colidido_x = obstaculo.rect[0]
                 obstaculo_colidido_y = obstaculo.rect[1]
                 obstaculo.kill()
-                efeito_explosao = ExplosaoFumaca(self.game,obstaculo_colidido_x,obstaculo_colidido_y)
+                efeito_explosao = ExplosaoFumaca(self.game, obstaculo_colidido_x, obstaculo_colidido_y)
                 for obstaculo in self.game.obstaculos:
                     obstaculo_x = obstaculo.rect[0]
                     obstaculo_y = obstaculo.rect[1]
                     if abs(obstaculo_y - obstaculo_colidido_x) < 201 and (obstaculo_y - obstaculo_colidido_y) < 201:
                         obstaculo.kill()
-                        efeito_explosao = ExplosaoFumaca(self.game,obstaculo_x,obstaculo_y)
+                        efeito_explosao = ExplosaoFumaca(self.game, obstaculo_x, obstaculo_y)
+        
+        hits = []
+        for item in self.game.itens:
+            offset_x = item.rect.left - self.hitbox.left
+            offset_y = item.rect.top - self.hitbox.top
+            if self.hitbox_mask.overlap(item.mask, (offset_x, offset_y)):     
+                
+                self.game.conhecimento += 1
+
+                # MUDANÇA PRINCIPAL: Em vez de destruir imediatamente, inicia animação
+                if isinstance(item, Conhecimento):
+                    item.iniciar_coleta()
+                else:
+                    # Para outros tipos de item, manter comportamento original
+                    item_colidido_x = item.rect[0]
+                    item_colidido_y = item.rect[1]
+                    item.kill()
+                    efeito_explosao = ExplosaoFumaca(self.game, item_colidido_x, item_colidido_y)
 
     def coletou_powerup(self):
         for _ in range(60):  # ou 40 para mais impacto
@@ -243,6 +262,123 @@ class PocaAgua(Obstacle):
 class CarrinhoTI(Obstacle):
     def __init__(self, game, x, y):
         super().__init__(game, x, y, "recursos/texturas/tiles/carrinho_ti_idle.png", 200, 200)
+
+class Item(pygame.sprite.Sprite):
+    def __init__(self, game, x, y, caminho_imagem, largura, altura):
+        self.game = game
+        self._layer = PAREDE_LAYER
+        self.groups = self.game.todos_sprites, self.game.itens
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        largura = largura
+        altura = altura 
+
+        self.image_raw = pygame.image.load(caminho_imagem).convert_alpha()
+        self.image = pygame.transform.scale(self.image_raw, (largura, altura))
+        self.rect = self.image.get_rect(center=(x, y))
+
+        self.mask = pygame.mask.from_surface(self.image)
+
+    def debug_draw_hitbox(self, tela):
+        pygame.draw.rect(tela, (255,0,0), self.rect, 2)
+
+    def update(self):
+        self.rect.y += VELOCIDADE_SCROLL  # rolagem para baixo
+        if self.rect.top > self.game.tela.get_height():
+            self.kill()
+
+class Conhecimento(Item):
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, "recursos/texturas/itens/livro_conhecimento.png", 80, 80)
+        
+        # Estados da animação
+        self.coletado = False
+        self.tempo_animacao = 0
+        self.duracao_animacao = 60  # frames para completar a animação
+        
+        # Posições para a animação (serão definidas quando coletado)
+        self.pos_inicial_x = 0
+        self.pos_inicial_y = 0
+        self.pos_final_x = 900
+        self.pos_final_y = 40
+        
+        # Tamanhos para a animação
+        self.tamanho_inicial = 75
+        self.tamanho_final = 20
+        
+        # Controle de curva
+        self.altura_curva = -200  # Altura da curva (negativo para curva para cima)
+    
+    def iniciar_coleta(self):
+        
+        # Captura a posição ATUAL do item quando coletado
+        self.pos_inicial_x = self.rect.centerx
+        self.pos_inicial_y = self.rect.centery
+        
+        self.coletado = True
+        self.tempo_animacao = 0
+        
+        # Muda o layer para ficar acima dos outros elementos
+        self._layer = 999  # Layer bem alto para ficar na frente
+        
+        # Remove APENAS do grupo de itens para não ser coletado novamente
+        # Mantém em todos_sprites para continuar chamando update()
+        if self in self.game.itens:
+            self.game.itens.remove(self)
+        
+    def update(self):
+        if not self.coletado:
+            # Comportamento normal - rolar para baixo
+            super().update()
+        else:
+            # Animação de coleta
+            self.tempo_animacao += 1
+            
+            # Progresso da animação (0 a 1)
+            progresso = self.tempo_animacao / self.duracao_animacao
+            
+            if progresso >= 1.0:
+                # Animação completa - destruir o item
+                self.game.conhecimento_scoreboard += 1
+                self.kill()
+                return
+            
+            # Função de easing para suavizar a animação
+            # Usando easing quadrático para acelerar no final
+            t = progresso * progresso
+            
+            # Calcular posição na curva exponencial/bezier
+            # Ponto de controle da curva no meio do caminho
+            meio_x = (self.pos_inicial_x + self.pos_final_x) / 2
+            meio_y = (self.pos_inicial_y + self.pos_final_y) / 2 + self.altura_curva
+            
+            # Curva quadrática de Bézier
+            # P(t) = (1-t)²P₀ + 2(1-t)tP₁ + t²P₂
+            inv_t = 1 - t
+            
+            new_x = (inv_t * inv_t * self.pos_inicial_x + 
+                    2 * inv_t * t * meio_x + 
+                    t * t * self.pos_final_x)
+            
+            new_y = (inv_t * inv_t * self.pos_inicial_y + 
+                    2 * inv_t * t * meio_y + 
+                    t * t * self.pos_final_y)
+            
+            # Interpolar tamanho
+            novo_tamanho = int(self.tamanho_inicial + 
+                             (self.tamanho_final - self.tamanho_inicial) * t)
+            
+            # Garantir que o tamanho não seja menor que 1
+            novo_tamanho = max(1, novo_tamanho)
+            
+            # Atualizar imagem com novo tamanho
+            self.image = pygame.transform.scale(self.image_raw, (novo_tamanho, novo_tamanho))
+            
+            # Atualizar posição
+            self.rect = self.image.get_rect(center=(int(new_x), int(new_y)))
+            
+            # Atualizar máscara para o novo tamanho
+            self.mask = pygame.mask.from_surface(self.image)
 
 class Ground(pygame.sprite.Sprite):
     def __init__(self, game, x, y,obstaculo):
@@ -416,6 +552,8 @@ class Scoreboard(pygame.sprite.Sprite):
         self.groups = self.game.todos_sprites, self.game.meta
         pygame.sprite.Sprite.__init__(self, self.groups)
 
+        self.game.conhecimento_scoreboard = self.game.conhecimento
+
         self.largura = 250
         self.altura = 75
 
@@ -427,7 +565,7 @@ class Scoreboard(pygame.sprite.Sprite):
 
     def update(self):
         # Atualiza o valor de pontuacao baseado na distância percorrida
-        self.game.pontuacao = self.game.distancia_percorrida // 60
+        self.game.pontuacao = self.game.distancia_percorrida // 20
 
         # Atualiza a imagem do placar
         self.image.fill((0, 0, 0, 0))  # Limpa com transparência
@@ -443,7 +581,7 @@ class Scoreboard(pygame.sprite.Sprite):
         # Renderiza os textos
         fonte = self.game.fonte_scoreboard
         texto_pontuacao = fonte.render(f"Pontuação: {self.game.pontuacao}", True, (255, 255, 255))
-        texto_conhecimento = fonte.render(f"Conhecimento: {self.game.networking}", True, (255, 255, 255))
+        texto_conhecimento = fonte.render(f"Conhecimento: {self.game.conhecimento_scoreboard}", True, (255, 255, 255))
         texto_networking = fonte.render(f"Networking: {self.game.networking}", True, (255, 255, 255))
 
         # Blita os textos na tela
