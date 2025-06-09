@@ -1,11 +1,10 @@
 # main.py
+import sys
 import pygame
 from recursos.config import *
 from recursos.sprites import *
 from recursos.funcoes import *
 from recursos.map_manager import MapManager
-
-import sys
 
 class Game:
     def __init__(self):
@@ -15,6 +14,7 @@ class Game:
         self.clock = pygame.time.Clock()
         icone = pygame.image.load('recursos/icon.png')
         pygame.display.set_icon(icone)
+        self.fonte_scoreboard = pygame.font.Font('recursos/PressStart2P.ttf',15)
         self.fonte_texto_vidas = pygame.font.Font('recursos/PressStart2P.ttf',15)
         self.fonte_como_pausar = pygame.font.Font('recursos/PressStart2P.ttf',8)
         self.fonte_menu = pygame.font.Font('recursos/PressStart2P.ttf',50)
@@ -22,7 +22,14 @@ class Game:
         self.rodando = True
 
     def novo(self):
-        self.pontuacao_atual = 0
+        self.nome = 'teste'
+        self.vidas = 3
+        self.distancia_percorrida = 0
+        self.pontuacao = 0
+        self.conhecimento = 0
+        self.networking = 0
+        self.nanos_coletados = 0
+
         self.jogando = True
         self.pausado = False
         
@@ -31,11 +38,12 @@ class Game:
         self.paredes = pygame.sprite.LayeredUpdates()
         self.efeitos = pygame.sprite.LayeredUpdates()
         self.meta = pygame.sprite.LayeredUpdates()
+        self.particulas = pygame.sprite.LayeredUpdates()
 
         self.map_manager = MapManager(self)
         self.player = Player(self, 450, 500)
         self.monitor = Monitor(self, 20, 1)
-
+        self.scoreboard = Scoreboard(self,20)
 
         self.map_manager.adicionar_nova_linha()
 
@@ -48,17 +56,25 @@ class Game:
                 if self.pausado == True: self.pausado = False
                 else: self.menu_pausa()
 
+            #debug events
+            if evento.type == pygame.KEYUP and evento.key == pygame.K_F13:
+                self.vidas = 3
+            if evento.type == pygame.KEYUP and evento.key == pygame.K_F14:
+                self.vidas = 0
     def update(self):
         #Método update que vem do Layered Updates que defini antes,
         #ele vai percorrer todos sprites que estão no grupo e vai procurar o método update deles.
         self.map_manager.atualizar()
         self.todos_sprites.update()
-        self.pontuacao_atual += 1
+        self.distancia_percorrida += 1
 
     def draw(self):
         self.tela.fill(BLACK)
         self.todos_sprites.draw(self.tela)
-        self.player.debug_draw_hitbox(self.tela)
+        #self.player.debug_draw_hitbox(self.tela)
+        # for sprite in self.todos_sprites:
+        #     if hasattr(sprite, 'debug_draw_hitbox'):
+        #         sprite.debug_draw_hitbox(self.tela)
         self.clock.tick(FPS)
         
         pygame.display.update()
@@ -75,7 +91,7 @@ class Game:
         self.rodando = False
 
     def game_over(self):
-        self.jogando = False
+        
         print('game over')
 
     def tela_inicial(self):
@@ -109,6 +125,7 @@ class Game:
         pygame.display.update()
     
 
+inicializar_banco_dados()
 g = Game()
 g.tela_inicial()
 g.novo()

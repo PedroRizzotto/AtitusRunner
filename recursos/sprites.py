@@ -1,5 +1,6 @@
 import pygame
 from recursos.config import *
+from recursos.funcoes import *
 import math
 import random
 
@@ -40,6 +41,8 @@ class Player(pygame.sprite.Sprite):
 
         self.offset_hitbox_top = 0.75  # 75% da altura para baixo
         self.hitbox_altura = int(self.rect.height * 0.25)  # 25% da altura
+        self.offset_hitbox_x = 0.40
+        self.hitbox_largura = int(self.rect.width * 0.60) # hitbox dos pés
         self.atualizar_hitbox()
 
 
@@ -103,18 +106,20 @@ class Player(pygame.sprite.Sprite):
     
     def atualizar_hitbox(self):
         altura = self.hitbox_altura
+        largura = self.hitbox_largura
         topo = self.rect.y + int(self.rect.height * self.offset_hitbox_top)
-        self.hitbox = pygame.Rect(self.rect.x, topo, self.rect.width, altura)
+        lado = self.rect.x + int(self.rect.width * self.offset_hitbox_x // 2)
+        self.hitbox = pygame.Rect(lado, topo, largura, altura)
 
 
     def update(self):
         if self.tempo_imunidade > 0:
             self.tempo_imunidade -= 1
-        
-        print(self.tempo_imunidade)
 
         self.movimento()
         self.animar()
+        self.atualizar_hitbox()
+        self.gerar_mask_hitbox()
 
         self.rect.x += self.movimentacao_x
         self.colisao()
@@ -122,7 +127,8 @@ class Player(pygame.sprite.Sprite):
         self.movimentacao_x = 0
         self.movendo = False
 
-        self.atualizar_hitbox()
+
+
 
     def movimento(self):
         teclas = pygame.key.get_pressed()
@@ -134,6 +140,14 @@ class Player(pygame.sprite.Sprite):
             self.movimentacao_x += VELOCIDADE_PLAYER
             self.direcao = 'direita'
             self.movendo = True
+
+    def gerar_mask_hitbox(self):
+        mask_surface = pygame.Surface((self.hitbox.width, self.hitbox.height), pygame.SRCALPHA)
+        # Copia da imagem somente a parte da hitbox
+        src_x = self.hitbox.left - self.rect.left
+        src_y = self.hitbox.top - self.rect.top
+        mask_surface.blit(self.image, (0, 0), pygame.Rect(src_x, src_y, self.hitbox.width, self.hitbox.height))
+        self.hitbox_mask = pygame.mask.from_surface(mask_surface)
 
     def animar(self):
         self.contador_animacao += self.velocidade_animacao
@@ -156,7 +170,7 @@ class Player(pygame.sprite.Sprite):
     def colisao(self):
         hits = []
         for parede in self.game.paredes:
-            if self.hitbox.colliderect(parede.rect):
+            if self.rect.colliderect(parede.rect):
                 hits.append(parede)
 
         for parede in hits:
@@ -167,63 +181,71 @@ class Player(pygame.sprite.Sprite):
 
         hits = []
         for obstaculo in self.game.obstaculos:
-            if self.hitbox.colliderect(obstaculo.rect):
+            offset_x = obstaculo.rect.left - self.hitbox.left
+            offset_y = obstaculo.rect.top - self.hitbox.top
+            if self.hitbox_mask.overlap(obstaculo.mask, (offset_x, offset_y)):
                 
                 if self.tempo_imunidade == 0:
-                    if self.game.monitor.vidas > 1:
-                        self.game.monitor.vidas -= 1
+                    if self.game.vidas > 1:
+                        self.game.vidas -= 1
                         self.tempo_imunidade = 30
                     else:
-                        self.game.game_over()
+                        escrever_dados(self.game.nome,self.game.nanos_coletados,self.game.pontuacao,self.game.networking)
+                        self.game.jogando = False
 
                 obstaculo_colidido_x = obstaculo.rect[0]
                 obstaculo_colidido_y = obstaculo.rect[1]
                 obstaculo.kill()
-                tile = Ground(self.game,obstaculo_colidido_x,obstaculo_colidido_y)
                 efeito_explosao = ExplosaoFumaca(self.game,obstaculo_colidido_x,obstaculo_colidido_y)
                 for obstaculo in self.game.obstaculos:
                     obstaculo_x = obstaculo.rect[0]
                     obstaculo_y = obstaculo.rect[1]
                     if abs(obstaculo_y - obstaculo_colidido_x) < 201 and (obstaculo_y - obstaculo_colidido_y) < 201:
                         obstaculo.kill()
-                        tile = Ground(self.game,obstaculo_x,obstaculo_y)
                         efeito_explosao = ExplosaoFumaca(self.game,obstaculo_x,obstaculo_y)
+
+    def coletou_powerup(self):
+        for _ in range(60):  # ou 40 para mais impacto
+            ParticulaExplosaoNeon(self.game, self)
 
     def debug_draw_hitbox(self, tela):
         pygame.draw.rect(tela, (0, 255, 0), self.rect, 1)  # sprite inteiro
         pygame.draw.rect(tela, (255, 0, 0), self.hitbox, 2)  # hitbox real
 
 class Obstacle(pygame.sprite.Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y,caminho_imagem, largura, altura):
         self.game = game
         self._layer = OBSTACULO_LAYER
         self.groups = self.game.todos_sprites, self.game.obstaculos
         pygame.sprite.Sprite.__init__(self, self.groups)
 
-        self.image_raw = pygame.image.load("recursos/texturas/tiles/chao_molhado.png").convert_alpha()
-        self.image = pygame.transform.scale(self.image_raw, (game.tela.get_width() // 5, game.tela.get_width() // 5))
-        self.rect = self.image.get_rect(topleft=(x, y))
+        largura = largura
+        altura = altura 
 
-        # Hitbox customizada
-        margem = 0.5 #porcentagem pra reduzir a hitbox
-        self.hitbox = pygame.Rect(
-            self.rect.left + self.rect.width / margem / 2,
-            self.rect.top + self.rect.height * margem /2,
-            self.rect.width * (1 - margem),
-            self.rect.height * (1- margem)
-        )
+        self.image_raw = pygame.image.load(caminho_imagem).convert_alpha()
+        self.image = pygame.transform.scale(self.image_raw, (largura, altura))
+        self.rect = self.image.get_rect(center=(x, y))
+
+        self.mask = pygame.mask.from_surface(self.image)
 
     def debug_draw_hitbox(self, tela):
-        pygame.draw.rect(tela, (255,0,0),self.hitbox, 2)
+        pygame.draw.rect(tela, (255,0,0),self.rect, 2)
 
     def update(self):
         self.rect.y += VELOCIDADE_SCROLL  # rolagem para baixo
-        self.hitbox.y += VELOCIDADE_SCROLL # mover a hitbox tbm
         if self.rect.top > self.game.tela.get_height():
             self.kill()
 
-class Ground(pygame.sprite.Sprite):
+class PocaAgua(Obstacle):
     def __init__(self, game, x, y):
+        super().__init__(game, x, y, "recursos/texturas/tiles/chao_molhado.png", 135, 135)
+
+class CarrinhoTI(Obstacle):
+    def __init__(self, game, x, y):
+        super().__init__(game, x, y, "recursos/texturas/tiles/carrinho_ti_idle.png", 200, 200)
+
+class Ground(pygame.sprite.Sprite):
+    def __init__(self, game, x, y,obstaculo):
         self.game = game
         self._layer = OBSTACULO_LAYER
         self.groups = self.game.todos_sprites
@@ -232,6 +254,13 @@ class Ground(pygame.sprite.Sprite):
         self.image_raw = pygame.image.load("recursos/texturas/tiles/chao_normal.png").convert_alpha()
         self.image = pygame.transform.scale(self.image_raw, (game.tela.get_width() // 5, game.tela.get_width() // 5))
         self.rect = self.image.get_rect(topleft=(x, y))
+
+        if obstaculo == '1':
+            sorteio_obs = random.randint(1,2)
+            if sorteio_obs == 1:
+                obstaculo = PocaAgua(self.game,self.rect.centerx,self.rect.centery)
+            elif sorteio_obs == 2:
+                obstaculo = CarrinhoTI(self.game,self.rect.centerx,self.rect.centery)
 
     def update(self):
         self.rect.y += VELOCIDADE_SCROLL
@@ -273,6 +302,9 @@ class Parede(pygame.sprite.Sprite):
         if self.rect.top > self.game.tela.get_height():
             self.kill()
 
+    def debug_draw_hitbox(self, tela):
+        pygame.draw.rect(tela, (255,0,0),self.rect, 2)
+
 class Monitor(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
         self.game = game
@@ -295,9 +327,6 @@ class Monitor(pygame.sprite.Sprite):
 
         self.contador_animacao = 0
         self.direcao_animacao = 'aumentando'
-
-        # Corações
-        self.vidas = 3  # Vidas do personagem
 
         self.tamanho_coracao = (35,35)
 
@@ -356,7 +385,7 @@ class Monitor(pygame.sprite.Sprite):
         for i in range(3):
             x = inicio_x + i * (self.tamanho_coracao[0] + 10)
             y = centro_y - 20 - self.tamanho_coracao[1] // 2
-            if i < self.vidas:
+            if i < self.game.vidas:
                 frame = self.coracoes_animados[self.frame_atual]
                 self.superficie.blit(frame, (x, y))
             else:
@@ -379,6 +408,50 @@ class Monitor(pygame.sprite.Sprite):
 
         #atualiza a posicao do Monitor
         self.rect = self.image.get_rect(center=(self.x + self.largura // 2, self.y + self.altura // 2))
+
+class Scoreboard(pygame.sprite.Sprite):
+    def __init__(self, game, y):
+        self.game = game
+        self._layer = META_LAYER
+        self.groups = self.game.todos_sprites, self.game.meta
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        self.largura = 250
+        self.altura = 75
+
+        self.x = LARGURA_TELA - self.largura - 10
+        self.y = y
+
+        self.image = pygame.Surface((self.largura, self.altura), pygame.SRCALPHA)
+        self.rect = self.image.get_rect(topleft=(self.x, self.y))
+
+    def update(self):
+        # Atualiza o valor de pontuacao baseado na distância percorrida
+        self.game.pontuacao = self.game.distancia_percorrida // 60
+
+        # Atualiza a imagem do placar
+        self.image.fill((0, 0, 0, 0))  # Limpa com transparência
+
+        # Desenha o fundo preto com 80% de transparência (opacidade 51 em 255)
+        pygame.draw.rect(
+            self.image,
+            (0, 0, 0, 204),  # Preto com alfa 204 (~80%)
+            pygame.Rect(0, 0, self.largura, self.altura),
+            border_radius=7
+        )
+
+        # Renderiza os textos
+        fonte = self.game.fonte_scoreboard
+        texto_pontuacao = fonte.render(f"Pontuação: {self.game.pontuacao}", True, (255, 255, 255))
+        texto_conhecimento = fonte.render(f"Conhecimento: {self.game.networking}", True, (255, 255, 255))
+        texto_networking = fonte.render(f"Networking: {self.game.networking}", True, (255, 255, 255))
+
+        # Blita os textos na tela
+        self.image.blit(texto_pontuacao, (10, 5))
+        self.image.blit(texto_conhecimento, (10, 30))
+        self.image.blit(texto_networking, (10, 55))
+
+
 
 class ExplosaoFumaca(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
@@ -435,3 +508,54 @@ class ExplosaoFumaca(pygame.sprite.Sprite):
         self.rect.y += VELOCIDADE_SCROLL
         if self.rect.top > self.game.tela.get_height():
             self.kill()
+
+class ParticulaExplosaoNeon(pygame.sprite.Sprite):
+    def __init__(self, game, player):
+        self.game = game
+        self._layer = PLAYER_LAYER + 1
+        self.groups = game.todos_sprites, game.particulas
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        # Cores neon vibrantes
+        cores_neon = [
+            (57, 255, 20),   # verde limão neon
+            (0, 255, 255),   # ciano
+            (255, 20, 147),  # rosa choque
+            (0, 191, 255),   # azul neon
+            (255, 255, 0),   # amarelo vivo
+            (255, 0, 255),   # magenta
+        ]
+        self.cor = random.choice(cores_neon)
+
+        # Tamanho do retângulo (retângulo vertical tipo barra de energia)
+        self.largura = 2
+        self.altura = 8
+        self.image = pygame.Surface((self.largura, self.altura), pygame.SRCALPHA)
+        pygame.draw.rect(self.image, self.cor, (0, 0, self.largura, self.altura), border_radius=1)
+        self.rect = self.image.get_rect()
+
+        # Distribuição ao redor do player - altura total, largura parcial
+        player_center = player.rect.center
+        player_width = player.rect.width
+        player_height = player.rect.height
+
+        offset_x = random.randint(-player_width // 2, player_width // 2)
+        offset_y = random.randint(-player_height // 2, player_height // 2)
+        self.pos = pygame.math.Vector2(player_center[0] + offset_x, player_center[1] + offset_y)
+        self.rect.center = self.pos
+
+        # Movimento: suave para cima, pode ter leve desvio lateral
+        self.vel = pygame.math.Vector2(random.uniform(-0.3, 0.3), random.uniform(-1.2, -0.4))
+        self.alpha = 255
+        self.fade_speed = random.randint(5, 9)
+
+    def update(self):
+        self.pos += self.vel
+        self.rect.center = self.pos
+
+        # Fade out
+        self.alpha -= self.fade_speed
+        if self.alpha <= 0:
+            self.kill()
+        else:
+            self.image.set_alpha(self.alpha)

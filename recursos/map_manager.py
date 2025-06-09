@@ -20,7 +20,7 @@ class MapManager:
             parede_direita = Parede(self.game, 900, y_pos,1,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
             for coluna in range(0,self.largura_linha):
                 x = 100 + (coluna * self.tamanho_tile)
-                tile = Ground(self.game, x, y_pos)
+                tile = Ground(self.game, x, y_pos,'0')
             y_pos += 200
 
     def gerar_linha_aleatoria(self):
@@ -43,10 +43,7 @@ class MapManager:
 
         for i, char in enumerate(nova_linha_str):
             x = 100 + (i * self.tamanho_tile)
-            if char == "1":
-                tile = Obstacle(self.game, x, y_pos)
-            else:
-                tile = Ground(self.game, x, y_pos)
+            tile = Ground(self.game, x, y_pos,char)
             nova_linha.append(tile)
 
         parede_esquerda = Parede(self.game, 0, y_pos,0,random.choices(TIPOS_PAREDE, weights=PROBABILIDADE_PAREDE, k=1)[0])
