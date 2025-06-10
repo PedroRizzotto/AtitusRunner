@@ -1,6 +1,7 @@
 import pygame
 import sys
 import math
+import pyttsx3
 from recursos.config import *
 
 class TelaInicial:
@@ -12,6 +13,7 @@ class TelaInicial:
         self.nome_inserido = ''
         self.entry_ativa = False
         self.estado = 'entry'  # 'entry' ou 'welcome'
+        self.falou_nome = False
 
         # Blur de fundo
         self.fundo = pygame.image.load("recursos/texturas/fachada_atitus.png")
@@ -62,6 +64,15 @@ class TelaInicial:
         self.desenhar_retangulo_arredondado(self.tela, self.botao_entry, (0,0,0,153), border)
         label = self.fonte.render('CONFIRMAR', True, WHITE)
         self.tela.blit(label, label.get_rect(center=self.botao_entry.center))
+
+    def falar_nome(self):
+        engine = pyttsx3.init()
+        texto = f"Olá, {self.nome_inserido}"
+        engine.say(texto)
+
+        engine.runAndWait()
+
+        self.falou_nome = True
 
     def desenhar_welcome(self):
         # Fundo sem blur extra
@@ -145,6 +156,7 @@ class TelaInicial:
             else:
                 self.desenhar_welcome()
             pygame.display.update()
+            if not self.falou_nome and self.estado == 'welcome': self.falar_nome()
             self.relogio.tick(FPS)
 
 
