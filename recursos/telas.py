@@ -8,6 +8,7 @@ class TelaInicial:
         self.tela = tela
         self.relogio = pygame.time.Clock()
         self.fonte = pygame.font.Font('recursos/PressStart2P.ttf', 20)
+        self.fonte_criado_por = pygame.font.Font('recursos/PressStart2P.ttf', 12)
         self.nome_inserido = ''
         self.entry_ativa = False
         self.estado = 'entry'  # 'entry' ou 'welcome'
@@ -50,7 +51,7 @@ class TelaInicial:
             cor_borda = pygame.Color(75, 155, 255)
         self.desenhar_retangulo_arredondado(self.tela, self.entry_rect, (0,0,0,153), cor_borda)
         texto = self.nome_inserido or 'Digite seu nome...'
-        txt = self.fonte.render(texto, True, (255,255,255))
+        txt = self.fonte.render(texto, True, WHITE)
         self.tela.blit(txt, (self.entry_rect.x+20,
                               self.entry_rect.y + (self.entry_rect.height-txt.get_height())//2))
 
@@ -59,7 +60,7 @@ class TelaInicial:
         border = pygame.Color('#195DA6')
         if self.botao_entry.collidepoint(mouse): border = pygame.Color(75,155,255)
         self.desenhar_retangulo_arredondado(self.tela, self.botao_entry, (0,0,0,153), border)
-        label = self.fonte.render('CONFIRMAR', True, (255,255,255))
+        label = self.fonte.render('CONFIRMAR', True, WHITE)
         self.tela.blit(label, label.get_rect(center=self.botao_entry.center))
 
     def desenhar_welcome(self):
@@ -73,9 +74,9 @@ class TelaInicial:
         sufixo = f", {self.nome_inserido}!"
 
         # Renderizar partes separadamente
-        texto_prefixo = self.fonte.render(prefixo + " ", True, (255, 255, 255))
-        texto_mundo = self.fonte.render(palavra_riscada, True, (255, 255, 255))
-        texto_sufixo = self.fonte.render(sufixo, True, (255, 255, 255))
+        texto_prefixo = self.fonte.render(prefixo + " ", True, WHITE)
+        texto_mundo = self.fonte.render(palavra_riscada, True, WHITE)
+        texto_sufixo = self.fonte.render(sufixo, True, WHITE)
 
         # Calcular posição centralizada
         total_largura = texto_prefixo.get_width() + texto_mundo.get_width() + texto_sufixo.get_width()

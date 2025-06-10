@@ -240,7 +240,7 @@ class Game:
     
 if __name__ == '__main__':
     pygame.init()
-    pygame.display.set_caption('Atitus Survivor')
+    pygame.display.set_caption('Atitus Runner')
     tela = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
     icone = pygame.image.load('recursos/icon.png')
     pygame.display.set_icon(icone)
