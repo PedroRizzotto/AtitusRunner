@@ -128,7 +128,7 @@ class TelaInicial:
         if self.estado == 'entry' and evt.type == pygame.KEYDOWN and self.entry_ativa:
             if evt.key == pygame.K_BACKSPACE:
                 self.nome_inserido = self.nome_inserido[:-1]
-            elif len(self.nome_inserido) < 14 and evt.unicode.isprintable():
+            elif len(self.nome_inserido) < 10 and evt.unicode.isprintable():
                 self.nome_inserido += evt.unicode
         return False
 
@@ -145,4 +145,113 @@ class TelaInicial:
             else:
                 self.desenhar_welcome()
             pygame.display.update()
+            self.relogio.tick(FPS)
+
+
+class TelaGameOver:
+    def __init__(self, tela):
+        import pygame
+        from recursos.funcoes import obter_ultimos_registros
+        self.tela = tela
+        self.relogio = pygame.time.Clock()
+        self.fonte_coluna = pygame.font.Font('recursos/PressStart2P.ttf', 17)
+        self.fonte_celula = pygame.font.Font('recursos/PressStart2P.ttf', 20)
+        self.fonte_botao = pygame.font.Font('recursos/PressStart2P.ttf', 30)
+        self.records = obter_ultimos_registros(5)
+
+        print_jogo = pygame.image.tobytes(tela,'RGBA')
+        self.str_jogo_pausado = pygame.image.frombytes(print_jogo,(1000,700),'RGBA')
+        self.img_jogo_pausado = pygame.transform.gaussian_blur(self.str_jogo_pausado,10) # BLUR MAIS LENTO MAS MAIS BONITO
+
+        self.img_titulo_game_over = pygame.image.load("recursos/texturas/titulo_game_over.png").convert_alpha()
+        
+        # Botão de voltar/menu
+        self.botao_rect = pygame.Rect(
+            (LARGURA_TELA - 200) // 2, ALTURA_TELA - 120,
+            200, 50
+        )
+
+    def desenhar(self):
+        import pygame
+        # Blur e fundo escuro
+        self.tela.blit(self.img_jogo_pausado,(0,0))
+        self.tela.blit(self.img_titulo_game_over,(0,0))
+
+        # Cabeçalhos da tabela
+        headers = ['Nome', 'Nanos', 'Pontuação', 'Conhecimento', 'Networking']
+        col_widths = [200, 140, 200, 200, 200]
+        x_start = (LARGURA_TELA - sum(col_widths)) // 2
+        y_start = 300
+        # desenha cabeçalho
+        for i, text in enumerate(headers):
+            hdr_surf = self.fonte_coluna.render(text, True, (255, 255, 255))
+            x = x_start + sum(col_widths[:i]) + (col_widths[i] - hdr_surf.get_width()) // 2
+            self.tela.blit(hdr_surf, (x, y_start))
+
+        # linhas de dados
+        line_h = 30
+        for idx, (_, valores) in enumerate(self.records):
+            y = y_start + 40 + idx * line_h
+            # fundo alternado
+            if idx % 2 == 0:
+                row_bg = pygame.Surface((sum(col_widths), line_h))
+                row_bg.set_alpha(100)
+                row_bg.fill((50, 50, 50))
+                self.tela.blit(row_bg, (x_start, y))
+            # desenha cada coluna
+            cols = [
+                valores.get('nome',''),
+                str(valores.get('nanos',0)),
+                str(valores.get('pontuacao',0)),
+                str(valores.get('conhecimento',0)),
+                str(valores.get('networking',0))
+            ]
+            for j, col in enumerate(cols):
+                cell_surf = self.fonte_celula.render(col, True, (255, 255, 255))
+                x = x_start + sum(col_widths[:j]) + 50
+                self.tela.blit(cell_surf, (x, y))
+
+        # Botão Voltar
+        
+        btn_surf = pygame.Surface(self.botao_rect.size, pygame.SRCALPHA)
+        pygame.draw.rect(
+            btn_surf,
+            (0, 0, 0, 153),
+            btn_surf.get_rect(),
+            border_radius=20
+        )
+        self.tela.blit(btn_surf, self.botao_rect.topleft)
+        # borda "neon"
+        border_color = pygame.Color('#195DA6')
+        if self.botao_rect.collidepoint(pygame.mouse.get_pos()):
+            border_color = pygame.Color(75, 155, 255)
+        pygame.draw.rect(
+            self.tela,
+            border_color,
+            self.botao_rect,
+            width=4,
+            border_radius=20
+        )
+        # label
+        label = self.fonte_botao.render('VOLTAR', True, (255, 255, 255))
+        self.tela.blit(label, label.get_rect(center=self.botao_rect.center))
+
+        pygame.display.update()
+
+    def eventos(self, evento):
+        import pygame
+        if evento.type == pygame.MOUSEBUTTONDOWN:
+            if self.botao_rect.collidepoint(evento.pos):
+                return True
+        return False
+
+    def exibir(self):
+        import pygame
+        while True:
+            for e in pygame.event.get():
+                if e.type == pygame.QUIT:
+                    pygame.quit(); sys.exit()
+                if self.eventos(e):
+                    return
+            self.desenhar()
             self.relogio.tick(FPS)

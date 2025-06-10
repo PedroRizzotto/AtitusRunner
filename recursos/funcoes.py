@@ -40,7 +40,6 @@ def escrever_dados(nome,nanos,pontuacao,conhecimento,networking):
 
 
 def obter_ultimos_registros(limite=5):
-    """Obtém os últimos registros do arquivo de dados"""
     try:
         banco = open("recursos/log.dat", "r")
         dados = banco.read()
@@ -52,9 +51,6 @@ def obter_ultimos_registros(limite=5):
             
             for chave, valores in dadosDict.items():
                 registros.append((chave, valores))
-                print(f"Registro adicionado: {chave} -> {valores}")
-            
-            print(f"Total de registros antes da ordenação: {len(registros)}")
             
             # Ordenar por data/hora (mais recentes primeiro)
             # Convertendo data brasileira para formato ordenável
@@ -79,14 +75,11 @@ def obter_ultimos_registros(limite=5):
                     
                     return datetime_completo
                 except Exception as e:
-                    print(f"Erro ao extrair datetime: {e}")
                     return "0000-00-00 00:00:00"  # fallback
             
             registros.sort(key=extrair_datetime, reverse=True)
-            print(f"Registros após ordenação: {[r[0] for r in registros]}")
             
             return registros[:limite]
         return []
     except Exception as e:
-        print(f"Erro ao obter registros: {e}")
         return []
