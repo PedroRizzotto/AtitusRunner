@@ -33,6 +33,10 @@ class MapManager:
                 tile = Ground(self.game, x, y_pos, '0')
             y_pos += 200
 
+    def gerar_linha_livre(self):
+        linha = "0000"
+        return linha
+
     def gerar_linha_aleatoria(self):
         dificuldade = 0.2
         linha = ""
@@ -134,7 +138,9 @@ class MapManager:
 
     def should_spawn_conhecimento(self):
         # Reduz chance se já teve muitas linhas consecutivas com conhecimentos
-        if self.consecutive_conhecimento_lines >= 3:
+        if not self.game.gerar_conhecimento:
+            chance = 0
+        elif self.consecutive_conhecimento_lines >= 3:
             chance = self.conhecimento_spawn_chance * 0.3
         elif self.consecutive_conhecimento_lines >= 2:
             chance = self.conhecimento_spawn_chance * 0.6
@@ -146,7 +152,8 @@ class MapManager:
 
     def adicionar_nova_linha(self):
         
-        nova_linha_str = self.gerar_linha_aleatoria()
+        if self.game.gerar_obstaculos: nova_linha_str = self.gerar_linha_aleatoria()
+        else: nova_linha_str = self.gerar_linha_livre()
         
         y_pos = -self.tamanho_tile
         nova_linha = []  # ← lista de sprites da linha

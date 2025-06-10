@@ -310,7 +310,7 @@ class Conhecimento(Item):
         self.altura_curva = -200  # Altura da curva (negativo para curva para cima)
     
     def iniciar_coleta(self):
-        
+
         # Captura a posição ATUAL do item quando coletado
         self.pos_inicial_x = self.rect.centerx
         self.pos_inicial_y = self.rect.centery
@@ -554,7 +554,7 @@ class Scoreboard(pygame.sprite.Sprite):
 
         self.game.conhecimento_scoreboard = self.game.conhecimento
 
-        self.largura = 250
+        self.largura = 270
         self.altura = 75
 
         self.x = LARGURA_TELA - self.largura - 10

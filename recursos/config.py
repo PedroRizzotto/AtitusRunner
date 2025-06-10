@@ -25,6 +25,7 @@ GREEN = (0,255,0)
 
 
 INTENSIDADE_BLUR = 7
+INTENSIDADE_BLUR_GO = 20
 
 # Tipos de parede e Probabilidades
 TIPOS_PAREDE = [0,1,2,3]
