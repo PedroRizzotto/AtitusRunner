@@ -21,6 +21,7 @@ class Game:
         self.fonte_game_over = pygame.font.Font('recursos/PressStart2P.ttf',60)
         self.fonte_game_over_1 = pygame.font.Font('recursos/PressStart2P.ttf',80)
         self.fonte_scores_finais = pygame.font.Font('recursos/PressStart2P.ttf',17)
+        self.caminhos_nanos = ["recursos/texturas/nanos/DevJunior.png"]
         self.rodando = True
 
     def novo(self,nome):
@@ -50,6 +51,7 @@ class Game:
         self.player = Player(self, 450, 500)
         self.monitor = Monitor(self, 20, 1)
         self.scoreboard = Scoreboard(self,20)
+        self.drone = Drone(self,200,400)
 
         self.map_manager.adicionar_nova_linha()
 

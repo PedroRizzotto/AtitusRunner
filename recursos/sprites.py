@@ -697,3 +697,59 @@ class ParticulaExplosaoNeon(pygame.sprite.Sprite):
             self.kill()
         else:
             self.image.set_alpha(self.alpha)
+
+
+class Drone(pygame.sprite.Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self._layer = EFEITOS_LAYER
+        self.groups = game.todos_sprites
+        pygame.sprite.Sprite.__init__(self, self.groups)
+
+        self.x = x
+        self.y = y
+
+        self.tamanho_frame = 50
+        self.num_frames = 7
+
+        self.spritesheet = pygame.image.load("recursos/texturas/sprites/drone_spritesheet.png").convert_alpha()
+        self.frames = self.carregar_frames()
+        self.frame_index = 0
+        self.image = self.frames[self.frame_index]
+        self.rect = self.image.get_rect()
+        self.rect.topleft = (self.x, self.y)
+
+        self.frame_timer = 0
+        self.frame_interval = 25  # milissegundos entre frames
+
+        self.vx = random.uniform(-VELOCIDADE_MAX_DRONE, VELOCIDADE_MAX_DRONE)
+        self.vy = random.uniform(-VELOCIDADE_MAX_DRONE, VELOCIDADE_MAX_DRONE)
+
+    def carregar_frames(self):
+        frames = []
+        for i in range(self.num_frames):
+            frame_original = self.spritesheet.subsurface(pygame.Rect(i * self.tamanho_frame, 0, self.tamanho_frame, self.tamanho_frame))
+            img_nano_atual = pygame.image.load(self.game.caminhos_nanos[self.game.nanos_coletados]).convert_alpha()
+            img_nano_atual = pygame.transform.scale(img_nano_atual,(40,40))
+            frame_redimensionado = pygame.transform.scale(frame_original, (120, 120))
+            frame_redimensionado.blit(img_nano_atual,(40,75))
+            frames.append(frame_redimensionado)
+        return frames
+
+    def update(self):
+        # animacao
+        agora = pygame.time.get_ticks()
+        if agora - self.frame_timer > self.frame_interval:
+            self.frame_timer = agora
+            self.frame_index = (self.frame_index + 1) % len(self.frames)
+            self.image = self.frames[self.frame_index]
+
+        # movimento
+        self.rect.x += self.vx
+        self.rect.y += self.vy
+
+        # pra rebater quando bater em uma das bordas da tela
+        if self.rect.left <= 0 or self.rect.right >= LARGURA_TELA:
+            self.vx *= -1
+        if self.rect.top <= 0 or self.rect.bottom >= ALTURA_TELA:
+            self.vy *= -1
