@@ -60,6 +60,8 @@ class Game:
             if evento.type == pygame.QUIT:
                 self.jogando = False
                 self.rodando = False
+                global aberto
+                aberto = False
             if evento.type == pygame.KEYUP and evento.key == pygame.K_ESCAPE:
                 if self.pausado == True: self.pausado = False
                 else: self.menu_pausa()
@@ -138,8 +140,9 @@ if __name__ == '__main__':
     tela = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
     icone = pygame.image.load('recursos/icon.png')
     pygame.display.set_icon(icone)
-
-    while True:
+    global aberto
+    aberto = True
+    while aberto:
         # inicia a tela inicial
         nome = TelaInicial(tela).exibir()
 
@@ -151,5 +154,6 @@ if __name__ == '__main__':
         while g.rodando:
             g.main()
 
-        TelaGameOver(tela).exibir()
+        if aberto:
+            TelaGameOver(tela).exibir()
         # depois de sair dessa tela, volta para a tela inicial.

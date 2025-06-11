@@ -3,6 +3,9 @@ import sys
 import math
 import pyttsx3
 from recursos.config import *
+from recursos.funcoes import *
+import speech_recognition as sr
+
 
 class TelaInicial:
     def __init__(self, tela):
@@ -12,24 +15,29 @@ class TelaInicial:
         self.fonte_criado_por = pygame.font.Font('recursos/PressStart2P.ttf', 12)
         self.nome_inserido = ''
         self.entry_ativa = False
-        self.estado = 'entry'  # 'entry' ou 'welcome'
+        self.estado = 'entry'  # 'entry' ou 'welcome' pra saber 
         self.falou_nome = False
 
-        # Blur de fundo
+        # setup do speech recognition
+        self.recognizer = sr.Recognizer()
+        self.microfone = sr.Microphone() #senhor microfone kk
+        self.sr_stop_listening = None
+        self.voice_triggered = False
+
         self.fundo = pygame.image.load("recursos/texturas/fachada_atitus.png")
         self.fundo = pygame.transform.scale(self.fundo, (LARGURA_TELA, ALTURA_TELA))
         self.fundo = pygame.transform.gaussian_blur(self.fundo, 7)
 
-        # Título do jogo
+
         self.titulo_jogo = pygame.image.load("recursos/texturas/titulo_jogo.png").convert_alpha()
         self.anim_amplitude = 7  # pixels
         self.anim_speed = 0.9    # oscilações por segundo
 
-        # EntryBox
+        # entrybox pra colocar o nome
         self.entry_rect = pygame.Rect(200, 400, 600, 70)
         self.botao_entry = pygame.Rect(350, 490, 300, 70)
 
-        # Botão começar
+        # botão começar
         self.botao_start = pygame.Rect(350, 530, 300, 70)
 
     def desenhar_retangulo_arredondado(self, surface, rect, cor_fundo, cor_borda, radius=20, largura_borda=4):
@@ -38,8 +46,26 @@ class TelaInicial:
         surface.blit(s, (rect.x, rect.y))
         pygame.draw.rect(surface, cor_borda, rect, width=largura_borda, border_radius=radius)
 
-    def desenhar_entry(self):
-        # Fundo e título
+    def iniciar_reconhecimento(self):
+        # ajusta pro ruído ambiente (DESATIVEI PORQUE PARECIA QUE FAZIA DEMORAR MAIS E NÃO TINHA MUDANÇA SIGNIFICATIVA NO RECONHECIMENTO)
+       # with self.microfone as source:
+           # self.recognizer.adjust_for_ambient_noise(source)
+
+        def callback(recognizer, audio):
+            try:
+                texto = recognizer.recognize_google(audio, language='pt-BR')
+                if 'jogar' in texto.lower():
+                    self.voice_triggered = True
+            except sr.UnknownValueError:
+                pass
+            except sr.RequestError:
+                pass
+
+        # inicia escuta em background
+        self.sr_stop_listening = self.recognizer.listen_in_background(self.microfone, callback)
+
+    def desenhar_tela(self):
+        # fundo e titulo
         self.tela.blit(self.fundo, (0, 0))
         t = pygame.time.get_ticks() / 1000.0
         offset_y = math.sin(2 * math.pi * self.anim_speed * t) * self.anim_amplitude
@@ -47,7 +73,7 @@ class TelaInicial:
         y = 50 + offset_y
         self.tela.blit(self.titulo_jogo, (x, y))
 
-        # EntryBox
+        # entrybox
         cor_borda = pygame.Color('#195DA6')
         if self.entry_ativa:
             cor_borda = pygame.Color(75, 155, 255)
@@ -57,7 +83,7 @@ class TelaInicial:
         self.tela.blit(txt, (self.entry_rect.x+20,
                               self.entry_rect.y + (self.entry_rect.height-txt.get_height())//2))
 
-        # Botão Confirmar
+        #botao confirmar
         mouse = pygame.mouse.get_pos()
         border = pygame.Color('#195DA6')
         if self.botao_entry.collidepoint(mouse): border = pygame.Color(75,155,255)
@@ -69,42 +95,37 @@ class TelaInicial:
         engine = pyttsx3.init()
         texto = f"Olá, {self.nome_inserido}"
         engine.say(texto)
-
         engine.runAndWait()
-
         self.falou_nome = True
 
     def desenhar_welcome(self):
-        # Fundo sem blur extra
         self.tela.fill((0,0,0))
         self.tela.blit(self.fundo, (0, 0))
 
-        # Saudação
+        # texto de boas-vindas
         prefixo = "Olá"
         palavra_riscada = "mundo"
         sufixo = f", {self.nome_inserido}!"
 
-        # Renderizar partes separadamente
         texto_prefixo = self.fonte.render(prefixo + " ", True, WHITE)
         texto_mundo = self.fonte.render(palavra_riscada, True, WHITE)
         texto_sufixo = self.fonte.render(sufixo, True, WHITE)
 
-        # Calcular posição centralizada
         total_largura = texto_prefixo.get_width() + texto_mundo.get_width() + texto_sufixo.get_width()
         x_inicial = LARGURA_TELA // 2 - total_largura // 2
         y_texto = 200
 
-        # Blit na tela
         self.tela.blit(texto_prefixo, (x_inicial, y_texto))
         self.tela.blit(texto_mundo, (x_inicial + texto_prefixo.get_width(), y_texto))
         self.tela.blit(texto_sufixo, (x_inicial + texto_prefixo.get_width() + texto_mundo.get_width(), y_texto))
 
-        # Desenhar linha sobre "mundo"
+        # strikethrough
         x_mundo = x_inicial + texto_prefixo.get_width()
         y_mundo = y_texto + texto_mundo.get_height() // 2
-        pygame.draw.line(self.tela, (255, 255, 255), (x_mundo, y_mundo), (x_mundo + texto_mundo.get_width(), y_mundo), 2)
+        pygame.draw.line(self.tela, (255, 255, 255), (x_mundo, y_mundo),
+                         (x_mundo + texto_mundo.get_width(), y_mundo), 2)
 
-        # Explicação rápida
+        # instruções do jogo
         linhas = [
             "Neste jogo você controla o personagem",
             "utilizando A e D ou as setas do teclado",
@@ -118,23 +139,40 @@ class TelaInicial:
             self.tela.blit(txt, (LARGURA_TELA//2 - txt.get_width()//2, y0))
             y0 += txt.get_height() + 5
 
-        # Botão Iniciar
+        # botão iniciar
         mouse = pygame.mouse.get_pos()
         border = pygame.Color('#195DA6')
         if self.botao_start.collidepoint(mouse): border = pygame.Color(75,155,255)
         self.desenhar_retangulo_arredondado(self.tela, self.botao_start, (0,0,0,153), border)
-        label = self.fonte.render('JOGAR', True, (255,255,255))
+        label = self.fonte.render('JOGAR', True, WHITE)
         self.tela.blit(label, label.get_rect(center=self.botao_start.center))
 
+        # instrução de voz
+        texto_instr = '(Ou diga em voz alta "JOGAR" para iniciar o jogo)'
+        instr = self.fonte_criado_por.render(texto_instr, True, (200,200,200))
+        pos_x = LARGURA_TELA//2 - instr.get_width()//2
+        pos_y = self.botao_start.y + self.botao_start.height + 10
+        self.tela.blit(instr, (pos_x, pos_y))
+
     def processar_eventos(self, evt):
+        # checa trigger de voz
+        if self.estado == 'welcome' and self.voice_triggered:
+            # encerra reconhecimento
+            if self.sr_stop_listening:
+                self.sr_stop_listening(wait_for_stop=False)
+            return True
+
         if evt.type == pygame.MOUSEBUTTONDOWN:
             if self.estado == 'entry':
                 if self.entry_rect.collidepoint(evt.pos): self.entry_ativa = True
                 else: self.entry_ativa = False
                 if self.botao_entry.collidepoint(evt.pos) and self.nome_inserido.strip():
                     self.estado = 'welcome'
+                    self.iniciar_reconhecimento()
             elif self.estado == 'welcome':
                 if self.botao_start.collidepoint(evt.pos):
+                    if self.sr_stop_listening:
+                        self.sr_stop_listening(wait_for_stop=False)
                     return True
         if self.estado == 'entry' and evt.type == pygame.KEYDOWN and self.entry_ativa:
             if evt.key == pygame.K_BACKSPACE:
@@ -142,6 +180,7 @@ class TelaInicial:
             elif len(self.nome_inserido) < 10 and evt.unicode.isprintable():
                 self.nome_inserido += evt.unicode
         return False
+
 
     def exibir(self):
         while True:
@@ -152,7 +191,7 @@ class TelaInicial:
                 if self.processar_eventos(evt):
                     return self.nome_inserido
             if self.estado == 'entry':
-                self.desenhar_entry()
+                self.desenhar_tela()
             else:
                 self.desenhar_welcome()
             pygame.display.update()
@@ -162,8 +201,6 @@ class TelaInicial:
 
 class TelaGameOver:
     def __init__(self, tela):
-        import pygame
-        from recursos.funcoes import obter_ultimos_registros
         self.tela = tela
         self.relogio = pygame.time.Clock()
         self.fonte_coluna = pygame.font.Font('recursos/PressStart2P.ttf', 17)
@@ -184,12 +221,10 @@ class TelaGameOver:
         )
 
     def desenhar(self):
-        import pygame
-        # Blur e fundo escuro
         self.tela.blit(self.img_jogo_pausado,(0,0))
         self.tela.blit(self.img_titulo_game_over,(0,0))
 
-        # Cabeçalhos da tabela
+        # cabeçalhos
         headers = ['Nome', 'Nanos', 'Pontuação', 'Conhecimento', 'Networking']
         col_widths = [200, 140, 200, 200, 200]
         x_start = (LARGURA_TELA - sum(col_widths)) // 2
@@ -223,7 +258,7 @@ class TelaGameOver:
                 x = x_start + sum(col_widths[:j]) + 50
                 self.tela.blit(cell_surf, (x, y))
 
-        # Botão Voltar
+        # botao voltar
         
         btn_surf = pygame.Surface(self.botao_rect.size, pygame.SRCALPHA)
         pygame.draw.rect(
@@ -233,7 +268,7 @@ class TelaGameOver:
             border_radius=20
         )
         self.tela.blit(btn_surf, self.botao_rect.topleft)
-        # borda "neon"
+
         border_color = pygame.Color('#195DA6')
         if self.botao_rect.collidepoint(pygame.mouse.get_pos()):
             border_color = pygame.Color(75, 155, 255)
@@ -244,7 +279,7 @@ class TelaGameOver:
             width=4,
             border_radius=20
         )
-        # label
+        # label dentro do botão
         label = self.fonte_botao.render('VOLTAR', True, (255, 255, 255))
         self.tela.blit(label, label.get_rect(center=self.botao_rect.center))
 

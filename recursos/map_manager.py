@@ -1,8 +1,7 @@
 # recursos/map_manager.py
 
 import random
-import pygame
-from recursos.sprites import Obstacle, Ground, Parede, Conhecimento
+from recursos.sprites import *
 from recursos.config import *
 
 class MapManager:
