@@ -21,6 +21,7 @@ Foi utilizado também a biblioteca [pyttsx3](https://pypi.org/project/pyttsx3/) 
 
 ## Testadores
 Testador do jogo: Carlos Eduardo Zanin RA: 1138275
+
 Professora Thaisa Leal
 
 ***
