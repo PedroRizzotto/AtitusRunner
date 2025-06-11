@@ -18,3 +18,4 @@ venv/
 *.log
 
 # Específicos do projeto
+*.spec
