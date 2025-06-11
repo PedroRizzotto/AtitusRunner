@@ -3,7 +3,7 @@ import sys
 import os
 
 # Configuração para incluir arquivos de recursos
-include_files = []
+include_files = ["recursos"]
 recursos_path = os.path.join(os.getcwd(), "recursos")
 for root, dirs, files in os.walk(recursos_path):
     for file in files:
