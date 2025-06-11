@@ -1,5 +1,4 @@
 # main.py
-import sys
 import pygame # esse é o pygame-ce, versão atualizada e mantida pela comunidade.
             # Então Marcão se tu for testar rodar esse código -> pip uninstall pygame -> pip install pygame-ce
             # é totalmente backwards-compatible com os jogos em pygame normal, mas esse tem algumas funções novas que utilizei
