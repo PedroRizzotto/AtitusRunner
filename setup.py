@@ -6,7 +6,7 @@ cx_Freeze.setup(
     name = "Atitus Runner",
     options={
         "build_exe":{
-            "packages":["pygame","pyttsx3","comtypes"],
+            "packages":["pygame","pyttsx3","comtypes","encodings","aifc","chunk","audioop"],
             "include_files":["recursos"]
         }
     }, executables = executaveis
