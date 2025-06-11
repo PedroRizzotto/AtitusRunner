@@ -1,41 +1,48 @@
 import cx_Freeze
 import sys
 import os
+from cx_Freeze import setup, Executable
 
-# Configuração para incluir arquivos de recursos
-include_files = ["recursos"]
-recursos_path = os.path.join(os.getcwd(), "recursos")
-for root, dirs, files in os.walk(recursos_path):
-    for file in files:
-        file_path = os.path.join(root, file)
-        include_files.append(file_path)
-
-# Configuração para pacotes necessários
-build_options = {
-    "packages": ["pygame", "pyttsx3", "encodings"],  # Adicionei 'encodings' explicitamente
-    "include_files": include_files,
-    "excludes": ["tkinter"],  # Pode excluir módulos não usados
-    "optimize": 1
-}
-
-# Configuração base
-base = None
+# Configuração especial para garantir a execução
 if sys.platform == "win32":
-    base = "Win32GUI"  # Para não mostrar console no Windows
+    base = "Win32GUI"
+    # Isso força a criação do manifest
+    additional_options = {
+        "build_exe": {
+            "include_msvcr": True,
+            "silent": True
+        }
+    }
+else:
+    base = None
+    additional_options = {}
 
-executables = [
-    cx_Freeze.Executable(
-        script="main.py",
-        base=base,
-        icon="recursos/icon.ico",
-        target_name="AtitusRunner.exe"
-    )
-]
+# Configuração dos arquivos
+def get_all_files():
+    file_list = []
+    for root, _, files in os.walk("recursos"):
+        for file in files:
+            file_list.append(os.path.join(root, file))
+    return file_list
 
-cx_Freeze.setup(
+setup(
     name="Atitus Runner",
     version="1.0",
-    description="Jogo Atitus Runner",
-    options={"build_exe": build_options},
-    executables=executables
-)
+    description="Jogo de Corrida",
+    options={
+        "build_exe": {
+            "packages": ["pygame", "pyttsx3","encodings"],
+            "includes": ["pygame._sdl2"],
+            "include_files": get_all_files(),
+            "optimize": 2
+        },
+        **additional_options
+    },
+    executables=[
+        Executable(
+            "main.py",
+            base=base,
+            icon="recursos/icon.ico",
+            target_name="AtitusRunner.exe",
+            # Configurações extras para Windows
+            uac_admin=True if sys.platform == "win32" else False)])
