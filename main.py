@@ -134,6 +134,8 @@ class Game:
 
     
 if __name__ == '__main__':
+    import multiprocessing
+    multiprocessing.freeze_support()
     pygame.init()
     pygame.display.set_caption('Atitus Runner')
     tela = pygame.display.set_mode((LARGURA_TELA, ALTURA_TELA))
