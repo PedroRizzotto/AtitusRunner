@@ -1,3 +1,4 @@
-pygame
+pygame-ce
 pyttsx3
 SpeechRecognition
+PyAudio
