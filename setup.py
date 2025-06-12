@@ -9,4 +9,4 @@ cx_Freeze.setup(
             "include_files":["recursos"]
         }
     }, executables = executaveis
-)
+)       
